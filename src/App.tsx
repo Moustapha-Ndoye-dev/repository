@@ -42,7 +42,7 @@ export default function Component() {
     setLastScannedToken(trimmedToken);
 
     try {
-      const response = await fetch('http://127.0.0.1:5001/api/tokens');
+      const response = await fetch('https://qrgenerator-production-dd2c.up.railway.app/api/tokens');
       if (!response.ok) throw new Error(`Erreur HTTP! statut: ${response.status}`);
       
       const data = await response.json();
@@ -77,7 +77,7 @@ export default function Component() {
 
   const invalidateToken = async (token: string) => {
     try {
-      const response = await fetch('http://127.0.0.1:5001/api/tokens/invalidate', {
+      const response = await fetch('https://qrgenerator-production-dd2c.up.railway.app/api/tokens/invalidate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
