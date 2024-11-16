@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QRScanner } from './components/QRScanner';
-import { QrCode, CheckCircle2, XCircle, History } from 'lucide-react';
+import { QrCode, CheckCircle2, XCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function Component() {
@@ -10,8 +10,7 @@ export default function Component() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [scanHistory, setScanHistory] = useState<{ token: string; isValid: boolean; timestamp: string }[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
+  const [peopleCount, setPeopleCount] = useState(0);
 
   useEffect(() => {
     fetchTokens();
@@ -23,12 +22,12 @@ export default function Component() {
     try {
       setIsLoading(true);
       const response = await fetch('http://127.0.0.1:5001/api/tokens');
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) throw new Error(`Erreur HTTP! statut: ${response.status}`);
       const data = await response.json();
       setTokens(data);
     } catch (error) {
-      console.error('Error fetching tokens:', error);
-      toast.error('Failed to fetch tokens');
+      console.error('Erreur lors de la récupération des tokens:', error);
+      toast.error('Échec de la récupération des tokens');
       setTokens([]);
     } finally {
       setIsLoading(false);
@@ -44,28 +43,23 @@ export default function Component() {
 
     try {
       const response = await fetch('http://127.0.0.1:5001/api/tokens');
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) throw new Error(`Erreur HTTP! statut: ${response.status}`);
       
       const data = await response.json();
       const freshTokens = data.map((token: string) => token.trim());
       const isValid = freshTokens.includes(trimmedToken);
       
       setVerificationStatus(isValid);
-      
-      setScanHistory(prev => [{
-        token: trimmedToken,
-        isValid,
-        timestamp: new Date().toLocaleString()
-      }, ...prev].slice(0, 10));
 
       setIsPopupVisible(true);
-      toast(isValid ? 'Valid token detected' : 'Invalid token', {
+      toast(isValid ? 'Code QR valide' : 'Code QR invalide', {
         icon: isValid ? '✅' : '❌',
         duration: 2000
       });
 
       if (isValid) {
         await invalidateToken(trimmedToken);
+        setPeopleCount(prevCount => prevCount + 1);
       }
 
       setTimeout(() => {
@@ -74,8 +68,8 @@ export default function Component() {
       }, 2000);
 
     } catch (error) {
-      console.error('Error verifying token:', error);
-      toast.error('Verification failed');
+      console.error('Erreur lors de la vérification du token:', error);
+      toast.error('Échec de la vérification');
       setVerificationStatus(false);
       setScanning(false);
     }
@@ -89,11 +83,11 @@ export default function Component() {
         body: JSON.stringify({ token }),
       });
 
-      if (!response.ok) throw new Error('Failed to invalidate token');
+      if (!response.ok) throw new Error('Échec de l\'invalidation du token');
       await fetchTokens();
     } catch (error) {
-      console.error('Error invalidating token:', error);
-      toast.error('Failed to invalidate token');
+      console.error('Erreur lors de l\'invalidation du token:', error);
+      toast.error('Échec de l\'invalidation du token');
     }
   };
 
@@ -109,17 +103,13 @@ export default function Component() {
                 <QrCode className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">QR Token Verifier</h1>
-                <p className="text-xs md:text-sm text-gray-500">Scan and verify QR tokens securely</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Vérificateur de QR Code</h1>
+                <p className="text-xs md:text-sm text-gray-500">Scannez et vérifiez les QR codes en toute sécurité</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center justify-center space-x-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors w-full md:w-auto"
-            >
-              <History className="w-5 h-5" />
-              <span>History</span>
-            </button>
+            <div className="text-lg font-semibold text-blue-600">
+              Personnes présentes: {peopleCount}
+            </div>
           </div>
         </div>
       </header>
@@ -131,44 +121,6 @@ export default function Component() {
               <QRScanner onTokenFound={handleTokenFound} isDisabled={scanning} />
             </div>
           </div>
-
-          {showHistory && (
-            <div className="w-full md:w-96">
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-lg">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <History className="w-5 h-5 mr-2" />
-                  Scan History
-                </h2>
-                <div className="space-y-3">
-                  {scanHistory.map((scan, index) => (
-                    <div
-                      key={index}
-                      className="p-3 rounded-lg bg-gray-50 border border-gray-100"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
-                          {scan.token}
-                        </span>
-                        {scan.isValid ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {scan.timestamp}
-                      </div>
-                    </div>
-                  ))}
-                  {scanHistory.length === 0 && (
-                    <p className="text-sm text-gray-500 text-center py-4">
-                      No scan history yet
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {isPopupVisible && (
@@ -178,14 +130,14 @@ export default function Component() {
                 {verificationStatus ? (
                   <>
                     <CheckCircle2 className="mx-auto w-12 h-12 md:w-16 md:h-16 text-green-500 mb-4" />
-                    <h2 className="text-xl md:text-2xl font-bold text-green-700 mb-2">Valid Token</h2>
-                    <p className="text-sm md:text-base text-green-600">Token successfully verified</p>
+                    <h2 className="text-xl md:text-2xl font-bold text-green-700 mb-2">Code QR valide</h2>
+                    <p className="text-sm md:text-base text-green-600">Code QR vérifié avec succès</p>
                   </>
                 ) : (
                   <>
                     <XCircle className="mx-auto w-12 h-12 md:w-16 md:h-16 text-red-500 mb-4" />
-                    <h2 className="text-xl md:text-2xl font-bold text-red-700 mb-2">Invalid Token</h2>
-                    <p className="text-sm md:text-base text-red-600">This token is not valid</p>
+                    <h2 className="text-xl md:text-2xl font-bold text-red-700 mb-2">Code QR invalide</h2>
+                    <p className="text-sm md:text-base text-red-600">Ce code QR n'est pas valide</p>
                   </>
                 )}
               </div>
