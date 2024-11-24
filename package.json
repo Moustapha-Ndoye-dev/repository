@@ -1,0 +1,16 @@
+{
+  "name": "projectscan",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "react-scripts": "^5.0.1",
+    "shadcn-ui": "^0.9.3"
+  }
+}
